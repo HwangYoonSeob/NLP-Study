@@ -11,6 +11,6 @@
 
 - 3주차 [RNN](https://github.com/HwangYoonSeob/NLP-Study/blob/main/200810%20-%20RNN%20%EA%B5%AC%ED%98%84.md)
 
-- 4주차 [문장 생성] (https://github.com/HwangYoonSeob/NLP-Study/blob/main/200817%20-%20%EB%AC%B8%EC%9E%A5%EC%83%9D%EC%84%B1%20%EA%B5%AC%ED%98%84.md)
+- 4주차 [문장 생성](https://github.com/HwangYoonSeob/NLP-Study/blob/main/200817%20-%20%EB%AC%B8%EC%9E%A5%EC%83%9D%EC%84%B1%20%EA%B5%AC%ED%98%84.md)
 
-- 5주차 [Attention] (https://github.com/HwangYoonSeob/NLP-Study/blob/main/200824%20-%20Attention%20%EA%B5%AC%ED%98%84.md)
+- 5주차 [Attention](https://github.com/HwangYoonSeob/NLP-Study/blob/main/200824%20-%20Attention%20%EA%B5%AC%ED%98%84.md)

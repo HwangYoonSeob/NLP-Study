@@ -19,3 +19,5 @@
 ### 2. 2020-2학기, Paper Review
 
 - 1주차 [Transformer, Attention is all you need](https://github.com/HwangYoonSeob/NLP-Study/blob/main/200907%20-%20Transformer%20%EB%A6%AC%EB%B7%B0.md)
+
+- 2주차 [GPT, Improving Language Understanding by Generative Pre-Training](https://github.com/HwangYoonSeob/NLP-Study/blob/main/200914%20-%20GPT%20%EB%A6%AC%EB%B7%B0.md)

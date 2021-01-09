@@ -34,7 +34,7 @@ NLP Projects
 - 기업에서 수집한 수학 문제 데이터로 해당 문제가 어떤 단원에 속하는 문제인지 분류 
 - Python
 - **_Library_**: Numpy, Pytorch, FastText, XGBoost, scikit-learn ML(SVM, MNB, LogisticRegression, MLP)
--  **_Approch_**: EDA, SKT-KoBERT, KoELECTRA, Ensemble
+-  **_Approch_**: EDA, SKT-KoBERT, KoELECTRA, Model Ensemble
 
 
 ### 5. DACON 한국어 문서추출 경진대회 
@@ -52,6 +52,15 @@ NLP Projects
 - **_Library_**: Numpy, NLTK, FastText, XGBoost, scikit-learn ML(Logistic Regression, SGD, RandomForest, MLP, DecisionTree)
 -  **_Approch_**: LSTM, Feature Engineering, Stacking Ensemble 
 - 결과: 최종 1등 
+
+### 7. DACON 가짜뉴스 분류 경진대회 
+
+- 광고성 뉴스기사, 주제와 관련 없는 뉴스기사 분류 
+- Python
+- **_Library_**: Numpy, FastText, XGBoost, Logistic Regression, Pytorch
+-  **_Approch_**: LSTM, CNN, SKT-KoBERT, SKT-KoGPT, SKT-KoBART, KoELECTRA, Model Ensemble
+- 결과: 상위 8% (18/210)
+
 
 
 

@@ -6,7 +6,7 @@ NLP Projects
 - 2020 딥러닝 수업
 - 네이버 책 소개 문장들을 수집하여 해당 문장들로 도서의 주제를 분류
 - Python 
-- _Library_: Numpy, KoNLPY, Tensorflow, Keras
+- **Library**: Numpy, KoNLPY, Tensorflow, Keras
 - Approch: Data Crawling, LSTM, Multi Layer Perceptron(MLP)
 
 

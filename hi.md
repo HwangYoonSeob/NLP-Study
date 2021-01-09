@@ -172,18 +172,17 @@ x_test['CNN'] = cnn_model.predict(test_x)
 
 ### STEP3: FastText
 
-FACEBOOK 의 FastText에서 제공하는 Unsupervised Learning 을 통하여 train data set을 학습시킴
-이후, 학습된 FastText Model로 각 문장들을 임베딩 하였고 이를 Feature로 활용
+- FACEBOOK 의 FastText에서 제공하는 Unsupervised Learning 을 통하여 train data set을 학습시킨 이후, 학습된 FastText Model로 각 문장들을 임베딩 하였고 이를 Feature로 활용
+- 또한 Title 임베딩과 Content 임베딩의 Cosine Similarity를 구하여 Feature로 활용 
 
 ``` python
-train['text'].to_csv('sample_file.txt',index=False, header=None, sep="\t")
-model_ft = fasttext.train_unsupervised('sample_file.txt', minCount=2, minn=2, maxn=10,dim=300)
+import nltk
+nltk.download('punkt')
+nltk.download('vader_lexicon')
+nltk.download('averaged_perceptron_tagger')
 
 def sent2vec(s):
     words = nltk.tokenize.word_tokenize(s)
-    #words = [k.stem(w) for w in words]
-    #words = [w for w in words if not w in string.digits]
-    #words = [w for w in words if w.isalpha()]
     M = []
     for w in words:
         try:
@@ -192,35 +191,40 @@ def sent2vec(s):
             continue
     M = np.array(M)
     v = M.sum(axis=0)
-    if type(v) != np.ndarray:
-        return np.zeros(300)
-    return v
+    if (M == np.zeros(100)).all():
+        return v
+    return v / np.sqrt((v ** 2).sum())
 
-xtrain_ft = np.array([sent2vec(x) for x in train['text']])
-xtest_ft = np.array([sent2vec(x) for x in test['text']])
+xtrain_title_ft = np.array([sent2vec(x) for x in train['title']])
+xtrain_content_ft = np.array([sent2vec(x) for x in train['content']])
 
-train_ft=pd.DataFrame(xtrain_ft)
-train_ft.columns = ['ft_vector_'+str(i) for i in range(xtrain_ft.shape[1])]
+xtest_title_ft = np.array([sent2vec(x) for x in test['title']])    
+xtest_content_ft = np.array([sent2vec(x) for x in test['content']])    
 
-test_ft=pd.DataFrame(xtest_ft)
-test_ft.columns = ['ft_vector_'+str(i) for i in range(xtrain_ft.shape[1])]
+from sklearn.metrics.pairwise import cosine_similarity
 
-train = pd.concat([train, train_ft], axis=1)
-test = pd.concat([test, test_ft], axis=1)
+train_cossim = []
+for i in range(xtrain_title_ft.shape[0]):
+    train_cossim.append(cosine_similarity(xtrain_title_ft[i].reshape(1,-1),xtrain_content_ft[i].reshape(1,-1))[0][0])
+
+test_cossim = []
+for i in range(xtest_title_ft.shape[0]):
+    test_cossim.append(cosine_similarity(xtest_title_ft[i].reshape(1,-1),xtest_content_ft[i].reshape(1,-1))[0][0])    
+
+x_train['sim'] = train_cossim
+x_test['sim'] = test_cossim   
 ```
-#### STEP3: XGBoost 
-총 **_430개의 Feature_** 를 Extract 하였고 XGBoost 모델로 Classification 학습했다. 
-``` python
-cols_to_drop = ['index', 'text']
-train_X = train.drop(cols_to_drop+['author'], axis=1)
-train_y=train['author']
-test_index = test['index'].values
-test_X = test.drop(cols_to_drop, axis=1)
-xgb_preds=[]
-kf = model_selection.KFold(n_splits=5, shuffle=True, random_state=2020)
 
-for dev_index, val_index in kf.split(train_X):
-    dev_X, val_X = train_X.loc[dev_index], train_X.loc[val_index]
+#### STEP4: XGBoost 
+총 **_204개의 Feature_** 를 Extract 하였고 XGBoost 모델로 Classification 학습했다. 
+
+``` python
+xgb_preds=[]
+train_y = train['info']
+kf = model_selection.StratifiedKFold(n_splits=5, shuffle=True, random_state=2020)
+
+for dev_index, val_index in kf.split(train,train_y):
+    dev_X, val_X = x_train.loc[dev_index], x_train.loc[val_index]
     dev_y, val_y = train_y[dev_index], train_y[val_index]
     
     dtrain = xgb.DMatrix(dev_X,label=dev_y)
@@ -232,7 +236,7 @@ for dev_index, val_index in kf.split(train_X):
     param['eta'] = 0.1
     param['max_depth'] = 3
     param['silent'] = 1
-    param['num_class'] = 5
+    param['num_class'] = 2
     param['eval_metric'] = "mlogloss"
     param['min_child_weight'] = 1
     param['subsample'] = 0.8
@@ -240,10 +244,10 @@ for dev_index, val_index in kf.split(train_X):
     param['seed'] = 0
     param['tree_method'] = 'gpu_hist'
 
-    model = xgb.train(param, dtrain, 2000, watchlist, early_stopping_rounds=50, verbose_eval=20)
+    xgbmodel = xgb.train(param, dtrain, 3000, watchlist, early_stopping_rounds=50, verbose_eval=20)
 
-    xgtest2 = xgb.DMatrix(test_X)
-    xgb_pred = model.predict(xgtest2, ntree_limit = model.best_ntree_limit)
+    xgtest2 = xgb.DMatrix(x_test)
+    xgb_pred = xgbmodel.predict(xgtest2, ntree_limit = xgbmodel.best_ntree_limit)
     xgb_preds.append(list(xgb_pred))
 
 ```
@@ -251,15 +255,6 @@ for dev_index, val_index in kf.split(train_X):
 #### STEP4: 결과
 ![image](https://user-images.githubusercontent.com/75110162/103353149-622fc580-4aeb-11eb-8589-91f6cf7f35eb.png)
 
-0.14877 의 loss로 3등으로 대회를 마쳤다. 이는 초기 모델인 LSTM보다 훨씬 좋은 SCORE였다. Kaggle에서 왜 XGBoost가 인기 있는 모델인지 다시 한번 알 수 있었다.
+Public 10등/210, Private 상위8% (18등/210)
 
-그리고 운이 좋게도 1등,2등 을 하신 분들이 대회 규칙으로 인하여 수상에서 제외되고 3등인 내가 최종 1등이 되었다. 
-
-![image](https://user-images.githubusercontent.com/75110162/103353628-a66f9580-4aec-11eb-90c6-d206296f9b89.png)
-
-
-#### SELF 피드백 
-
-- 전처리를 안하는 쪽이 loss를 줄여나가는 데에 분명 도움이 되었다. 그러나 아예 안하는 것은 최선은 아니었을 것 같다. 너무 모델링에만 집중한 것은 아니었을까
-- XGBoost 의 Feature로 Neural Network Model을 사용하지 않았다. 다른 수상자 분들의 코드는 CNN이나 LSTM을 Stacking 했을 때 Feature Importance가 높았다. 
 

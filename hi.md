@@ -4,7 +4,7 @@ NLP Projects
 ### 1. LSTM, MLP를 활용한 도서주제 분류
 
 - 2020 딥러닝 수업
-- 네이버 책 소개 문장들을 수집하여 해당 문장들로 도서의 주제를 분류
+- 네이버 책 소개 문장들을 수집, 해당 문장들로 도서의 주제를 분류
 - Python 
 - **_Library_**: Numpy, KoNLPY, Tensorflow, Keras
 - **_Approch_**: Data Crawling, LSTM, Multi Layer Perceptron(MLP)
@@ -22,14 +22,26 @@ NLP Projects
 ### 3. BERT 감성분석을 활용한 서울시 도시 재생 사업 방향 제언
 
 - 2020 품질공학 수업 
+- 서울시 도시 재생 사업의 리뷰들을 수집, BERT 감성분석 활용하여 해당 도시 재생 사업 평가 
 - Python
--  **_Library_**: Numpy, Keras, Pytorch, SKT-KoBERT
+-  **_Library_**: Numpy, Pytorch
 -  **_Approch_**: Data Crawling, SKT-KoBERT, BERT Sentiment Analysis <br>
 
 
 ### 4. Mathpresso 산학협력 프로젝트
 
-- 2020 품질공학 수업 
+- 2020 YAI 인공지능 학회 <-> Mathpresso 기업 연계 프로젝트 
+- 기업에서 수집한 수학 문제 데이터로 해당 문제가 어떤 단원에 속하는 문제인지 분류 
 - Python
-- **_Library_**: Numpy, Keras, Pytorch, SKT-KoBERT
-- Data Crawling, SKT-KoBERTText Mining, BERT Sentiment Analysis, Conjoint Analysis <br>
+- **_Library_**: Numpy, Pytorch, FastText, XGBoost, scikit-learn ML(SVM, MNB, LogisticRegression, MLP)
+-  **_Approch_**: EDA, SKT-KoBERT, KoELECTRA, Ensemble
+
+
+### 5. DACON 한국어 문서추출 경진대회 
+
+- 2020 YAI 인공지능 학회 <-> Mathpresso 기업 연계 프로젝트 
+- 기업에서 수집한 수학 문제 데이터로 해당 문제가 어떤 단원에 속하는 문제인지 분류 
+- Python
+- **_Library_**: Numpy, Pytorch, FastText, XGBoost, scikit-learn ML(SVM, MNB, LogisticRegression, MLP)
+-  **_Approch_**: EDA, SKT-KoBERT, KoELECTRA, Ensemble
+

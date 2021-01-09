@@ -262,7 +262,7 @@ sub.to_csv('/content/submission.csv')
 
 
 ### 결과
-![image](https://user-images.githubusercontent.com/75110162/103353149-622fc580-4aeb-11eb-8589-91f6cf7f35eb.png)
+![image](https://user-images.githubusercontent.com/75110162/104089167-edf5de80-52af-11eb-9058-5a507ea5c3a7.png)
 
 Public 10등/210, Private 상위8% (18등/210)
 

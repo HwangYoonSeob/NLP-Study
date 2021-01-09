@@ -9,13 +9,13 @@
 - **_Approch_**: Data Crawling, LSTM, Multi Layer Perceptron(MLP)
 
 
-### 2. Text Mining과 Social Network Analysis 기법을 활용한 청소년 성교육 방향 제언
+### 2. Text Mining과 SNA 기법을 활용한 청소년 성교육 방향 제언
 
 - 2020 데이터마이닝 수업 
 - 네이버 지식IN 에 존재하는 청소년 성 고민 관련 글들을 수집, 이후 데이터 마이닝 기업을 적용하여 새로운 Insight 창출
 - Python
 - **_Library_**: Numpy, KoNLPy
-- **_Approch_**: Data Crawling, Text Mining, Social Network Analysis <br>
+- **_Approch_**: Data Crawling, Text Mining, Social Network Analysis(SNA) <br>
 
 
 ### 3. BERT 감성분석을 활용한 서울시 도시 재생 사업 방향 제언

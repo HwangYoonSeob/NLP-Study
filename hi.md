@@ -252,9 +252,20 @@ for dev_index, val_index in kf.split(train,train_y):
 
 ```
 
-#### STEP4: 결과
+### Model Ensemble 
+
+``` python
+k = np.argmax(np.array(electra_preds)+np.array(bert_preds)+np.array(gpt_preds)+np.array(bart_preds)+xgb_preds,axis=-1)
+sub['info']=k
+sub.to_csv('/content/submission.csv')
+```
+
+
+### 결과
 ![image](https://user-images.githubusercontent.com/75110162/103353149-622fc580-4aeb-11eb-8589-91f6cf7f35eb.png)
 
 Public 10등/210, Private 상위8% (18등/210)
+
+
 
 

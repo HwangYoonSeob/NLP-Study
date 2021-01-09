@@ -7,7 +7,7 @@ NLP Projects
 - 네이버 책 소개 문장들을 수집하여 해당 문장들로 도서의 주제를 분류
 - Python 
 - **_Library_**: Numpy, KoNLPY, Tensorflow, Keras
-- *__Approch_**: Data Crawling, LSTM, Multi Layer Perceptron(MLP)
+- **_Approch_**: Data Crawling, LSTM, Multi Layer Perceptron(MLP)
 
 
 ### 2. Text Mining과 Social Network Analysis 기법을 활용한 청소년 관심도 기반으로 한 성교육 방향 제언
@@ -23,13 +23,13 @@ NLP Projects
 
 - 2020 품질공학 수업 
 - Python
-- Numpy, Keras, Pytorch, SKT-KoBERT
-- Data Crawling, Text Mining, BERT Sentiment Analysis, Conjoint Analysis <br>
+-  **_Library_**: Numpy, Keras, Pytorch, SKT-KoBERT
+-  **_Approch_**: Data Crawling, SKT-KoBERT, BERT Sentiment Analysis <br>
 
 
 ### 4. Mathpresso 산학협력 프로젝트
 
 - 2020 품질공학 수업 
 - Python
-- Numpy, Keras, Pytorch, SKT-KoBERT
-- Data Crawling, Text Mining, BERT Sentiment Analysis, Conjoint Analysis <br>
+- **_Library_**: Numpy, Keras, Pytorch, SKT-KoBERT
+- Data Crawling, SKT-KoBERTText Mining, BERT Sentiment Analysis, Conjoint Analysis <br>

@@ -8,105 +8,110 @@
 
 - 뉴스의 Title과 Cotent가 주어지는데 해당 Content가 Title과 관련 있는 기사인지 아닌지 분류하는 __Binary Classification__ 과제 
 
+- **방향**:  4가지의 PreTrained Model과 XGBoost를 Ensemble 하여 성능을 높이자! 
+
 --------
 
-### 모델1. LSTM
+### 모델1. PreTrained Model (KoBERT, KoGPT, KoELECTRA, KoBART) - KoBERT 모델 예시 
 
-#### STEP1-1: 전처리: 문장부호 제거 
+#### STEP1: 전처리: Title과 Content를 합침
+단순히 내용만으로 분류하는 것보다 해당 기사의 제목과 내용을 합치는 것이 정확도가 높게 나왔음
 ``` python
-def alpha_num(text):
-    return re.sub(r'[^A-Za-z0-9 ]', '', text)
-
-train['text']=train['text'].apply(alpha_num)
+train['title_content']=train['title']+' '+train['content']
+test['title_content']=test['title']+' '+test['content']
 ```
-#### STEP1-2: 불용어 제거 : nltk library 의 stopwords 이용 
+#### STEP2: BERTClassifier Class 
 ``` python
-nltk.download('stopwords')
-eng_stopwords = set(stopwords.words("english"))
-def remove_stopwords(text):
-    final_text = []
-    for i in text.split():
-        if i.strip().lower() not in stopwords:
-            final_text.append(i.strip())
-    return " ".join(final_text)
+class BERTClassifier(nn.Module):
+    def __init__(self,
+                 bert,
+                 hidden_size = 768,
+                 num_classes=2,
+                 dr_rate=None,
+                 params=None):
+        super(BERTClassifier, self).__init__()
+        self.bert = bert
+        self.dr_rate = dr_rate
+                 
+        self.classifier = nn.Linear(hidden_size , num_classes)
+        if dr_rate:
+            self.dropout = nn.Dropout(p=dr_rate)
+    
+    def gen_attention_mask(self, token_ids, valid_length):
+        attention_mask = torch.zeros_like(token_ids)
+        for i, v in enumerate(valid_length):
+            attention_mask[i][:v] = 1
+        return attention_mask.float()
+
+    def forward(self, token_ids, valid_length, segment_ids):
+        attention_mask = self.gen_attention_mask(token_ids, valid_length)
+        
+        _, pooler = self.bert(input_ids = token_ids, token_type_ids = segment_ids.long(), attention_mask = attention_mask.float().to(token_ids.device))
+        if self.dr_rate:
+            out = self.dropout(pooler)
+        return self.classifier(pooler)
 ```
 
-#### STEP2: 모델링: LSTM : Keras library 이용 
+#### STEP3: Dataset
 ``` python
-model = Sequential()
-model.add(Embedding(len(word_index)+1, output_dim=embed_size, input_length=MAX_LEN))
-model.add(LSTM(units=128 , return_sequences = True , recurrent_dropout = 0.25 , dropout = 0.25))
-model.add(LSTM(units=64 , recurrent_dropout = 0.1 , dropout = 0.1))
-model.add(Dense(units = 32 , activation = 'relu'))
-model.add(Dense(5,activation='softmax'))
-model.compile(optimizer=keras.optimizers.Adam(lr = 0.01), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+class BERTDataset1(Dataset):
+    def __init__(self, dataset, sent_idx, bert_tokenizer, max_len,
+                 pad, pair):
+        transform = nlp.data.BERTSentenceTransform(
+            bert_tokenizer, max_seq_length=max_len, pad=pad, pair=pair)
+
+        self.sentences = [transform([i[sent_idx]]) for i in dataset]
+
+    def __getitem__(self, i):
+        return (self.sentences[i])
+
+    def __len__(self):
+        return (len(self.sentences))
+
+test_x = test.title_content.values
+
+dataset_test = []
+for i in range(test_x.shape[0]):
+    dataset_test.append([test_x[i]])
+
+data_test = BERTDataset1(dataset_test, 0, tok, 128, True, False)
+test_dataloader = torch.utils.data.DataLoader(data_test, batch_size=64, num_workers=5)
 ```
-#### STEP3: 결과
-![image](https://user-images.githubusercontent.com/75110162/103350053-10367200-4ae2-11eb-9f12-026e6ba3438e.png)
 
-베이스라인 보다는 loss가 낮았지만, 모델에 layer를 추가하여 복잡하게 만들수록 과적합이 일어나 loss 점점 높아짐..
+#### STEP4: Train 데이터로 학습시킨 모델 load후 Test 데이터 Predict
+``` python
+bert=torch.load('/content/drive/MyDrive/open/Bert_model.pt').to(device)
 
-#### 원인분석
-- 문장 부호를 제거하는 전처리를 진행하면 작가 고유의 특성이 사라지게됨 
-- stopwords 역시 마찬가지, stopwords 에 등장하는 단어를 자주 쓰는 것 역시 작가의 고유 특성이 될 수 있음 
-- 한가지의 모델로 loss를 낮추는 데에는 한계가 있다고 생각, Ensemble 기법 필요하다. 
+bert.eval()
+for batch_id, (token_ids, valid_length, segment_ids) in enumerate(tqdm(test_dataloader)):
+    with torch.no_grad():
+        token_ids = token_ids.long().to(device)
+        segment_ids = segment_ids.long().to(device)
+        valid_length= valid_length
+        out = bert(token_ids, valid_length, segment_ids)
+        if(batch_id==0):
+            preds=out
+        else:
+            preds = torch.vstack((preds,out))
+bert_preds = preds
+```
 
 ---------------
 
 ### 모델2. XGBoost
-Concept:  **Meta Feature**와 **Text Based Feature**로 구분지어 Feature Engineering 후 Stacking Ensemble 기법 활용
+Concept:  Logisitic Regression, LSTM, CNN, FastText 모델을 Stacking Ensemble 하여 최종 모델로 XGBoost 
 
-#### STEP1: META Feature
-사용한 대표적 Meta Feature(중요도가 높았던 Feature)는 다음과 같다. 
-- 단어 갯수
-- 평균 단어 길이
-- 음절 갯수
-- 쉼표 사이의 음절 갯수
-- 명사 비율
-- 형용사 비율
-- 문장 난이도 (flesch_reading_ease library 활용)
-- 문장 감성 분석( nltk SentimentIntensityAnalyzer 활용)
-- POS tagging 을 통해 문장에서 등장하는 고유 명사(사람 이름 등) 중복도 
+#### STEP1: Logisitic Regression
+- Mecab Tokenizer + CounterVectorizer + Logistic Regression + KFold
 
 ``` python
-train['num_words']=train['text'].apply(lambda x:len(get_words(x)))
-train['mean_word_len']=train['text'].apply(lambda x:np.mean([len(w) for w in str(x).split()]))
-train["num_unique_words"] = train["text"].apply(lambda x: len(set(str(x).split())))
-train["num_chars"] = train["text"].apply(lambda x: len(str(x)))
-train["num_stopwords"] = train["text"].apply(lambda x: len([w for w in str(x).lower().split() if w in eng_stopwords]))
-train["num_punctuations"] =train['text'].apply(lambda x: len([c for c in str(x) if c in string.punctuation]) )
-train["num_words_upper"] = train["text"].apply(lambda x: len([w for w in str(x).split() if w.isupper()]))/train["num_words"]
-train["num_words_title"] = train["text"].apply(lambda x: len([w for w in str(x).split() if w.istitle()]))/train["num_words"]
-train["chars_between_comma"] = train["text"].apply(lambda x: np.mean([len(chunk) for chunk in str(x).split(",")]))/train["num_chars"]
-train["symbols_unknowns"]=train["text"].apply(lambda x: np.sum([not w in symbols_knowns for w in str(x)]))/train["num_chars"]
-train['noun'] = train["text"].apply(lambda x: fraction_noun(x))
-train['adj'] = train["text"].apply(lambda x: fraction_adj(x))
-train['verbs'] = train["text"].apply(lambda x: fraction_verbs(x))
-train["sentiment"]=train["text"].apply(sentiment_nltk)
-train['single_frac'] = train['text'].apply(lambda x: count_tokens(x, ['is', 'was', 'has', 'he', 'she', 'it', 'her', 'his']))/train["num_words"]
-train['plural_frac'] = train['text'].apply(lambda x: count_tokens(x, ['are', 'were', 'have', 'we', 'they']))/train["num_words"]
-train['first_word_len']=train['text'].apply(first_word_len)/train["num_chars"]
-train['last_word_len']=train['text'].apply(last_word_len)/train["num_chars"]
-train["first_word_id"] = train['text'].apply(lambda x: symbol_id(list(x.strip())[0]))
-train["last_word_id"] = train['text'].apply(lambda x: symbol_id(list(x.strip())[-1]))
-train['ease']=train['text'].apply(flesch_reading_ease)
-```
+count_char_train = count_char_vec.transform(train.title_content.values)
+count_word_train = count_word_vec.transform(train.title_content.values)
+count_char_test = count_char_vec.transform(test.title_content.values)
+count_word_test = count_word_vec.transform(test.title_content.values)
 
-#### STEP2-1: Text Based Feature : Machine Learning
-여러가지 Machine Learning Algorithm들의 결과를 Stacking 하여 loss를 줄여나갔다.
-사용한 기법은 다음과 같다.
-
-- LogisticRegression
-- SGDClassifier
-- RandomForestClassifier
-- MLPClassifier
-- DecisionTreeClassifier
-
-``` python
-tfidf_vec = TfidfVectorizer(tokenizer=word_tokenize, stop_words=stopwords.words('english'), ngram_range=(1, 3), min_df=50)
-train_tfidf = tfidf_vec.fit_transform(train['text'].values.tolist())
-test_tfidf = tfidf_vec.transform(test['text'].values.tolist())
-train_y = train['author']
+x_train1 = sparse.hstack([count_char_train, count_word_train])
+x_test1 = sparse.hstack([count_char_test, count_word_test])
 
 def runLR(train_X,train_y,test_X,test_y,test_X2):
     model=LogisticRegression()
@@ -114,42 +119,58 @@ def runLR(train_X,train_y,test_X,test_y,test_X2):
     pred_test_y=model.predict_proba(test_X)
     pred_test_y2=model.predict_proba(test_X2)
     return pred_test_y, pred_test_y2, model
-
-
+    
 cv_scores=[]
-cols_to_drop=['text','index']
-train_X = train.drop(cols_to_drop+['author'], axis=1)
-train_y=train['author']
-test_X = test.drop(cols_to_drop, axis=1)
-pred_train=np.zeros([train.shape[0],5])
+train_y = np.array(train['info'])
 pred_full_test = 0
+pred_train=np.zeros([train.shape[0],2])
 
-cv = model_selection.StratifiedKFold(n_splits=5, shuffle=True, random_state=2020)
+kf = model_selection.StratifiedKFold(n_splits=5, shuffle=True, random_state=2020)
 
-for dev_index, val_index in cv.split(train_X,train_y):
-    dev_X, val_X = train_tfidf[dev_index], train_tfidf[val_index]
+for dev_index, val_index in kf.split(train,train_y):
+    dev_X, val_X = x_train1.tocsc()[dev_index], x_train1.tocsc()[val_index]
     dev_y, val_y = train_y[dev_index], train_y[val_index]
-    pred_val_y, pred_test_y, model = runLR(dev_X, dev_y, val_X, val_y,test_tfidf)
-    pred_full_test = pred_full_test + pred_test_y
+    pred_val_y, pred_test_y, model = runLR(dev_X, dev_y, val_X, val_y, x_test1.tocsc())
     pred_train[val_index,:] = pred_val_y
+    pred_full_test = pred_full_test + pred_test_y
     cv_scores.append(metrics.log_loss(val_y, pred_val_y))
 print("Mean cv score : ", np.mean(cv_scores))
 pred_full_test = pred_full_test / 5.
 
-train["tfidf_LR_0"] = pred_train[:,0]
-train["tfidf_LR_1"] = pred_train[:,1]
-train["tfidf_LR_2"] = pred_train[:,2]
-train["tfidf_LR_3"] = pred_train[:,3]
-train["tfidf_LR_4"] = pred_train[:,4]
-test["tfidf_LR_0"] = pred_full_test[:,0]
-test["tfidf_LR_1"] = pred_full_test[:,1]
-test["tfidf_LR_2"] = pred_full_test[:,2]
-test["tfidf_LR_3"] = pred_full_test[:,3]
-test["tfidf_LR_4"] = pred_full_test[:,4]
+x_train["lr_count_0"] = pred_train[:,0]
+x_train["lf_count_1"] = pred_train[:,1]
+x_test["lr_count_0"] = pred_full_test[:,0]
+x_test["lf_count_1"] = pred_full_test[:,1]
 ```
-**_TFIDF vectorizer + Logistic Regression + KFold 을 활용한 Feature Stacking_**
 
-### STEP2-2: Text Based Feature : FastText
+#### STEP2: LSTM, CNN 
+- Keras Tokenizer fitting, Train 데이터로 학습시킨 CNN,LSTM 모델로 Predict 
+
+``` python
+from keras.preprocessing import text, sequence
+
+data_x = train.title_content.values
+tokenizer = text.Tokenizer()
+tokenizer.fit_on_texts(data_x)
+tokenized_train = tokenizer.texts_to_sequences(data_x)
+train_x = sequence.pad_sequences(tokenized_train, maxlen=128)
+
+data_test_x = test.title_content.values
+tokenized_test = tokenizer.texts_to_sequences(data_test_x)
+test_x = sequence.pad_sequences(tokenized_test, maxlen=128)
+
+from keras.models import load_model
+
+lstm_model = load_model("/content/drive/MyDrive/open/CuDNNLSTM.h5")
+cnn_model = load_model("/content/drive/MyDrive/open/CNN.h5")
+
+x_train['LSTM'] = lstm_model.predict(train_x)
+x_test['LSTM'] = lstm_model.predict(test_x)
+x_train['CNN'] = cnn_model.predict(train_x)
+x_test['CNN'] = cnn_model.predict(test_x)
+```
+
+### STEP3: FastText
 
 FACEBOOK 의 FastText에서 제공하는 Unsupervised Learning 을 통하여 train data set을 학습시킴
 이후, 학습된 FastText Model로 각 문장들을 임베딩 하였고 이를 Feature로 활용

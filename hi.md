@@ -1,5 +1,4 @@
-NLP Projects
--------------
+# NLP Projects
 
 ### 1. LSTM, MLP를 활용한 도서주제 분류
 
@@ -51,7 +50,7 @@ NLP Projects
 - Python
 - **_Library_**: Numpy, NLTK, FastText, XGBoost, scikit-learn ML(Logistic Regression, SGD, RandomForest, MLP, DecisionTree)
 -  **_Approch_**: LSTM, Feature Engineering, Stacking Ensemble 
-- 결과: 최종 1등 
+- 결과: 상위 2% (3/286), 코드 평가 후 **최종 1등**
 
 ### 7. DACON 가짜뉴스 분류 경진대회 
 
